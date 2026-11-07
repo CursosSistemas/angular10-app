@@ -1,0 +1,43 @@
+name: SonarQube Cloud
+
+on:
+  push:
+    branches:
+      - main           
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  build-test-analyze:
+    name: Build, pruebas y análisis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 14 
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar (producción)
+        run: npx ng build --prod
+
+      - name: Pruebas unitarias con cobertura
+        run: npx ng test --watch=false --code-coverage --browsers=ChromeHeadless
+
+      - name: Análisis con SonarQube Cloud
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
